@@ -5,3 +5,4 @@ Dataset/
 __init__.py
 models.py
 Research Paper.docx
+__pycache__/
