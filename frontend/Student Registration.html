@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Registration - CoreSight</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #00ff88;
+      --accent: #00d4ff;
+      --bg-dark: #0a0a0a;
+      --bg-card: #0f0f0f;
+      --border: #1a1a1a;
+      --text: #ffffff;
+      --text-muted: #888;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+
+    body.light-mode {
+      --bg-dark: #f8f9fa;
+      --bg-card: #ffffff;
+      --border: #e0e0e0;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --primary: #00cc6f;
+      --accent: #00a8d4;
+    }
+
+    /* Animated Background */
+    .animated-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+
+    body.light-mode .animated-bg {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f8f9fa 100%);
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10, 10, 10, 0.95);
+      backdrop-filter: blur(20px);
+      padding: 1.2rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid var(--border);
+    }
+
+    body.light-mode .header {
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .logo {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--primary);
+      text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+      text-decoration: none;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+
+    .nav-menu {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+
+    .nav-menu a {
+      color: #b0b0b0;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    .nav-menu a:hover {
+      color: var(--primary);
+      background: rgba(0, 255, 136, 0.1);
+    }
+
+    body.light-mode .nav-menu a {
+      color: #4a4a4a;
+    }
+
+    body.light-mode .nav-menu a:hover {
+      color: #00cc6f;
+      background: rgba(0, 204, 111, 0.1);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .btn-back {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .btn-back:hover {
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+    }
+
+    .theme-toggle {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      font-size: 1.3rem;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+
+    /* Main Container */
+    .main {
+      margin-top: 100px;
+      padding: 3rem;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr 400px;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    header h1 {
+      font-size: 3.5rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--text) 0%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Form */
+    .form {
+      grid-column: 1 / 3;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .panel:hover {
+      border-color: var(--primary);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .panel h2 {
+      font-size: 1.8rem;
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .panel h2::before {
+      content: '';
+      width: 4px;
+      height: 1.5rem;
+      background: linear-gradient(180deg, var(--primary), var(--accent));
+      border-radius: 2px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    /* Profile Box */
+    .profile-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      position: sticky;
+      top: 120px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .profile-box:hover {
+      border-color: var(--primary);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .profile-box input[type="file"] {
+      padding: 0.8rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    #profilePreview {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: var(--bg-dark);
+      display: none;
+    }
+
+    #profilePreview[src]:not([src=""]) {
+      display: block;
+    }
+
+    /* Academic Card */
+    .academic-card {
+      grid-column: 1 / 3;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .academic-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .academic-card > h2 {
+      font-size: 1.8rem;
+      color: var(--primary);
+      margin-bottom: 2rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .academic-card > h2::before {
+      content: '';
+      width: 4px;
+      height: 1.5rem;
+      background: linear-gradient(180deg, var(--primary), var(--accent));
+      border-radius: 2px;
+    }
+
+    .academic-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .academic-panel {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .academic-panel h3 {
+      font-size: 1.2rem;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    .field-group {
+      margin-bottom: 1rem;
+    }
+
+    .field-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .field-group label {
+      margin-bottom: 0.3rem;
+    }
+
+    /* Buttons */
+    .btn {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      color: #000;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      width: 100%;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 255, 136, 0.4);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-submit {
+      grid-column: 1 / 3;
+      padding: 1.5rem;
+      font-size: 1.1rem;
+    }
+
+    /* Status Message */
+    .status-message {
+      grid-column: 1 / 3;
+      padding: 1.2rem;
+      border-radius: 12px;
+      text-align: center;
+      font-weight: 600;
+      display: none;
+      animation: slideDown 0.3s ease;
+    }
+
+    .status-message.show {
+      display: block;
+    }
+
+    .status-message.success {
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .status-message.error {
+      background: rgba(255, 85, 85, 0.1);
+      border: 1px solid #ff5555;
+      color: #ff5555;
+    }
+
+    .status-message.loading {
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 1400px) {
+      .wrapper {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .profile-box {
+        grid-column: 1 / -1;
+        position: relative;
+        top: 0;
+      }
+
+      .form {
+        grid-column: 1 / -1;
+      }
+
+      .academic-card {
+        grid-column: 1 / -1;
+      }
+
+      .btn-submit {
+        grid-column: 1 / -1;
+      }
+
+      .status-message {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        padding: 1rem 1.5rem;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+      }
+
+      .main {
+        padding: 2rem 1.5rem;
+        margin-top: 80px;
+      }
+
+      header h1 {
+        font-size: 2.5rem;
+      }
+
+      .wrapper {
+        grid-template-columns: 1fr;
+      }
+
+      .field-row {
+        grid-template-columns: 1fr;
+      }
+
+      .academic-row {
+        grid-template-columns: 1fr;
+      }
+
+      .panel,
+      .profile-box,
+      .academic-card {
+        padding: 1.5rem;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+</head>
+<body>
+  <div class="animated-bg"></div>
+
+  <header class="header">
+    <a href="/frontend/index.html" class="logo">CoreSight</a>
+
+    <nav>
+  <ul class="nav-menu">
+
+    <li>
+      <a href="/frontend/index.html">
+        Home
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/Student%20Registration.html">
+        Registration
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/face_recognition.html">
+        Recognition
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/document.html">
+        Document
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/attendance.html">
+        Attendance
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/management.html">
+        Manage
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/index.html#about">
+        About
+      </a>
+    </li>
+
+  </ul>
+</nav>
+
+    <div class="header-actions">
+      <button class="btn-back" id="backBtn">← Back</button>
+      <!-- unified id for global theme.js -->
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="container">
+      <div class="wrapper">
+        <header>
+          <h1>Student Registration</h1>
+        </header>
+
+        <div id="status" class="status-message"></div>
+
+        <form id="studentForm" class="form">
+          <div class="panel">
+            <h2>Personal Details</h2>
+            <div class="field-row">
+              <div>
+                <label for="name">Full Name *</label>
+                <input id="name" name="name" required>
+              </div>
+              <div>
+                <label for="roll_no">Roll No *</label>
+                <input id="roll_no" name="roll_no" required>
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="email">Email *</label>
+                <input id="email" name="email" type="email" required>
+              </div>
+              <div>
+                <label for="phone">Phone</label>
+                <input id="phone" name="phone" type="tel">
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="dob">Date of Birth</label>
+                <input id="dob" name="dob" type="date">
+              </div>
+              <div>
+                <label for="department">Department</label>
+                <input id="department" name="department">
+              </div>
+              <div>
+                <label for="academic_year">Session</label>
+                <input id="academic_year" name="academic_year" placeholder="e.g. 2023-24">
+              </div>
+            </div>
+            <label for="address">Address</label>
+            <textarea id="address" name="address" rows="2"></textarea>
+          </div>
+
+          <div class="panel">
+            <h2>Parent / Guardian</h2>
+            <div class="field-row">
+              <div>
+                <label for="father_name">Father's Name</label>
+                <input id="father_name" name="father_name">
+              </div>
+              <div>
+                <label for="father_phone">Father's Phone</label>
+                <input id="father_phone" name="father_phone" type="tel">
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="mother_name">Mother's Name</label>
+                <input id="mother_name" name="mother_name">
+              </div>
+              <div>
+                <label for="mother_phone">Mother's Phone</label>
+                <input id="mother_phone" name="mother_phone" type="tel">
+              </div>
+            </div>
+            <div class="field-row">
+              <div>
+                <label for="guardian_name">Guardian Name</label>
+                <input id="guardian_name" name="guardian_name">
+              </div>
+              <div>
+                <label for="guardian_phone">Guardian Phone</label>
+                <input id="guardian_phone" name="guardian_phone" type="tel">
+              </div>
+            </div>
+          </div>
+
+          <section class="academic-card">
+            <h2>Academic Details</h2>
+            <div class="academic-row">
+              <div class="academic-panel">
+                <h3>🎓 High School (10th)</h3>
+                <div class="field-group">
+                  <label>Board</label>
+                  <input name="highschool_board" placeholder="e.g. CBSE, ICSE">
+                </div>
+                <div class="field-group">
+                  <label>Passing Year</label>
+                  <input name="highschool_year" placeholder="e.g. 2020" type="number">
+                </div>
+                <div class="field-group">
+                  <label>Marks / Percentage</label>
+                  <input name="highschool_marks" placeholder="e.g. 85%">
+                </div>
+              </div>
+
+              <div class="academic-panel">
+                <h3>📚 Intermediate (12th)</h3>
+                <div class="field-group">
+                  <label>Board</label>
+                  <input name="intermediate_board" placeholder="e.g. CBSE, ICSE">
+                </div>
+                <div class="field-group">
+                  <label>Passing Year</label>
+                  <input name="intermediate_year" placeholder="e.g. 2022" type="number">
+                </div>
+                <div class="field-group">
+                  <label>Marks / Percentage</label>
+                  <input name="intermediate_marks" placeholder="e.g. 90%">
+                </div>
+              </div>
+            </div>
+          </section>
+          <button type="submit" class="btn btn-submit" id="submitBtn">Register Student</button>
+        </form>
+
+        <aside class="panel profile-box">
+          <h2 style="margin:0;color:var(--accent)">📸 Profile Photo</h2>
+          <input id="profile" name="profile" type="file" accept="image/*">
+          <img id="profilePreview" src="" alt="Profile preview">
+          <button type="button" id="captureBtn" class="btn">📷 Capture From Camera</button>
+        </aside>
+        </form>
+
+
+      </div>
+    </div>
+  </main>
+
+  <script src="/config.js"></script>
+  <script>
+
+    const API_URL = window.CONFIG.API_BASE_URL;
+
+    const backBtn = document.getElementById('backBtn');
+    const profileInput = document.getElementById('profile');
+    const profilePreview = document.getElementById('profilePreview');
+    const studentForm = document.getElementById('studentForm');
+    const statusDiv = document.getElementById('status');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Back button
+    backBtn.addEventListener('click', () => {
+      window.history.back();
+    });
+
+    // Profile preview
+    profileInput.addEventListener('change', e => {
+      const f = e.target.files[0];
+      if (f) {
+        const r = new FileReader();
+        r.onload = ev => profilePreview.src = ev.target.result;
+        r.readAsDataURL(f);
+      }
+    });
+
+    // Camera capture
+
+    document.getElementById('captureBtn').addEventListener('click', async () => {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ video: true });
+        const v = document.createElement('video');
+        v.autoplay = true;
+        v.srcObject = s;
+        v.style.display = 'none';
+        document.body.appendChild(v);
+
+        await new Promise(r => v.onloadedmetadata = r);
+
+        const c = document.createElement('canvas');
+        c.width = v.videoWidth;
+        c.height = v.videoHeight;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(v, 0, 0);
+        const dataUrl = c.toDataURL('image/png');
+
+        profilePreview.src = dataUrl;
+
+        document.body.removeChild(v);
+        s.getTracks().forEach(t => t.stop());
+
+        showStatus('✅ Photo captured successfully!', 'success');
+        setTimeout(() => statusDiv.classList.remove('show'), 3000);
+      } catch (err) {
+        showStatus('❌ Camera error: ' + err.message, 'error');
+      }
+    });
+
+    document.getElementById("captureBtn").addEventListener("click", async () => {
+  try {
+    const rollNo =
+      document.getElementById("roll_no").value?.trim();
+
+    if (!rollNo) {
+      showStatus("❌ Enter Roll No before capturing photo", "error");
+      return;
+    }
+
+    showStatus("📷 Capturing and uploading photo...", "loading");
+
+    await captureAndUploadProfileImage(rollNo);
+
+    showStatus("✅ Profile photo captured & saved successfully!", "success");
+  } catch (err) {
+    showStatus("❌ " + err.message, "error");
+  }
+});
+
+    // Status helper
+    function showStatus(message, type) {
+      statusDiv.textContent = message;
+      statusDiv.className = 'status-message show ' + type;
+    }
+
+    // Form submission
+    studentForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      submitBtn.disabled = true;
+      showStatus('⏳ Registering student...', 'loading');
+
+      const fd = new FormData(studentForm);
+      const obj = Object.fromEntries(fd.entries());
+
+      try {
+        const res = await fetch(`${API_URL}/register-user`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(obj)
+        });
+
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.detail || 'Registration failed');
+
+        showStatus('✅ Registered successfully! Uploading image...', 'loading');
+
+        const file = profileInput.files[0];
+        if (file) {
+          const imgData = new FormData();
+          imgData.append('roll_no', obj.roll_no || obj.acad_roll || obj.enrollment_number || '');
+          imgData.append('profile_image', file);
+
+          const up = await fetch(`${API_URL}/upload-profile-image`, {
+            method: 'POST',
+            body: imgData
+          });
+
+          const upJson = await up.json();
+          if (!up.ok) throw new Error(upJson.detail || 'Image upload failed');
+
+          showStatus('🎉 Profile image uploaded successfully!', 'success');
+        }
+
+        const roll_no = obj.roll_no
+          || obj.acad_roll
+          || obj.enrollment_number
+          || document.getElementById('roll_no')?.value
+          || '';
+
+        setTimeout(() => {
+          if (roll_no) {
+            window.location.href = `CaptureImage.html?roll_no=${encodeURIComponent(roll_no)}`;
+          } else {
+            showStatus('✅ Registration complete!', 'success');
+          }
+          submitBtn.disabled = false;
+        }, 1500);
+
+      } catch (err) {
+        showStatus('❌ Error: ' + (err.message || err), 'error');
+        submitBtn.disabled = false;
+      }
+    });
+
+
+   async function captureAndUploadProfileImage(rollNo) {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+  const video = document.createElement("video");
+  video.srcObject = stream;
+  video.play();
+
+  await new Promise(resolve => video.onloadedmetadata = resolve);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0);
+
+  stream.getTracks().forEach(t => t.stop());
+
+  // Show preview
+  profilePreview.src = canvas.toDataURL("image/jpeg");
+
+  // Convert to Blob (THIS is the key part)
+  const blob = await new Promise(resolve =>
+    canvas.toBlob(resolve, "image/jpeg", 0.95)
+  );
+
+  // Upload using SAME backend endpoint
+  const formData = new FormData();
+  formData.append("roll_no", rollNo);
+  formData.append("profile_image", blob, "profile.jpg");
+
+  const res = await fetch(`${API_URL}/upload-profile-image`, {
+    method: "POST",
+    body: formData
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Camera image upload failed");
+  }
+
+  return await res.json();
+} 
+
+  </script>
+
+  <!-- Global theme handling for ALL pages -->
+  <script src="theme.js"></script>
+</body>
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoreSight | Student Profile Preview</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0a0a0a;
+      font-family: "Poppins", sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    /* === FIXED RIGHT SIDEBAR === */
+#sidebar {
+  width: 12%;
+  height: 100vh;
+  background: #111;
+  border-left: 3px solid #0ebfe2;
+  position: fixed;
+  right: 0;
+  top: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+
+  box-shadow: -5px 0 20px rgba(13, 175, 207, 0.3);
+}
+
+
+    /* --- MAIN CONTENT --- */
+    #content {
+      flex: 1;
+      overflow-y: scroll;
+      padding: 30px;
+      display: flex;
+      justify-content: center;
+    }
+
+    #preview {
+      width: 850px;
+      background: white;
+      border: 5px solid #08788f;
+      padding: 50px;
+      border-radius: 10px;
+      box-shadow: 0 0 25px rgba(0, 212, 255, 0.4);
+      min-height: 1300px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* --- HEADER (Smaller + Shifted Upwards) --- */
+#header {
+  text-align: center;
+  border-bottom: 2px solid #008bb1;
+  padding-bottom: 5px;     /* smaller */
+  margin-bottom: 15px;     /* pulls next section upward */
+  margin-top: -10px;       /* shifts the whole header upward */
+}
+
+#header img {
+  width: 70px;             /* smaller logo */
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+#header h1 {
+  display: inline-block;
+  font-size: 18px;         /* smaller heading */
+  font-weight: 700;
+  margin: 0;
+  color: #0c3a57;
+}
+
+#header h3 {
+  margin: 3px 0 0 0;
+  font-size: 12px;         /* smaller subheading */
+  font-weight: 400;
+  color: #444;
+}
+
+#session {
+  margin-top: 3px;
+  font-size: 13px;         /* smaller session text */
+  font-weight: 600;
+  color: #0c3a57;
+}
+
+    /* --- PROFILE SECTION (Smaller Photo) --- */
+#profile-section {
+  text-align: center;
+  margin-bottom: 20px;  /* reduced spacing */
+  margin-top: 10px;     /* pulls photo upward */
+}
+
+#profile-section img {
+  width: 120px;   /* smaller photo */
+  height: 120px;
+  border-radius: 100%;
+  border: 3px solid #046c81;
+  object-fit: cover;
+  box-shadow: 0 0 12px rgba(4, 97, 116, 0.4);
+}
+
+#roll-no {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0b0b0b;
+}
+
+
+    /* ---- SINGLE TABLE STYLE ---- */
+#details-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 12px; /* smaller font size */
+}
+
+#details-table th {
+  background: #000000;
+  color: #0a0a0a;
+  padding: 6px;
+  font-weight: 700;
+  text-align: left;
+  border: 1px solid #008bb1;
+}
+
+#details-table td {
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+}
+
+.section-heading {
+  background: #008bb1 !important;
+  color: white !important;
+  text-align: center !important;
+  font-size: 13px;
+}
+
+
+    /* --- SIGNATURE SECTION --- */
+    #signature-section {
+      display: flex;
+      justify-content: space-between;
+      margin-top: auto;
+      padding-top: 40px;
+    }
+
+    .signature-box {
+      width: 40%;
+      text-align: center;
+    }
+
+    
+
+    .sign-label {
+      font-size: 13px;
+      color: #0c3a57;
+      font-weight: 600;
+    }
+
+    /* --- FOOTER --- */
+    #footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: #444;
+      border-top: 2px solid #008bb1;
+      padding-top: 10px;
+    }
+
+    /* DOWNLOAD BUTTON AT BOTTOM CENTER */
+    #downloadBtn {
+  background: #008bb1;
+  border: none;
+  padding: 12px 35px;
+  font-size: 1.8rem;
+  font-weight: 550;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+  margin-top: 20px;
+  width: 90%;   /* increase this value */
+  height: 100%; 
+  color: white;
+}
+
+#downloadBtn:hover {
+  background: #92daec;
+}
+
+  </style>
+</head>
+
+<body>
+  <!-- RIGHT SIDEBAR -->
+<div id="sidebar">
+    <button id="downloadBtn">Download</button>
+</div>
+
+  <!-- MAIN CONTENT -->
+  <div id="content">
+    <div id="preview">
+
+      <!-- HEADER -->
+      <div id="header">
+        <img src="BansalLogo.jpg" alt="Logo" onerror="this.style.display='none'" />
+        <h1>Bansal Institute of Engineering and Technology</h1>
+        <h3>Affiliated to AKTU, Lucknow</h3>
+        <div id="session">Session: <span id="sessionYear"></span></div>
+      </div>
+
+      <!-- PROFILE SECTION -->
+      <div id="profile-section">
+        <img id="profilePhoto" src="" onerror="this.src='https://via.placeholder.com/130'">
+        <div id="roll-no"></div>
+      </div>
+
+     <!-- DETAILS SECTION : SINGLE TABLE -->
+<table id="details-table">
+  <!-- Rows will be inserted dynamically via JS -->
+</table>
+
+
+      <!-- SIGNATURE SECTION -->
+      <div id="signature-section">
+        <div class="signature-box">
+          <div class="sign-line"></div>
+          <div class="sign-label">Mentor's Signature</div>
+        </div>
+
+        <div class="signature-box">
+          <div class="sign-line"></div>
+          <div class="sign-label">Student's Signature</div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div id="footer">
+        Generated by CoreSight — <span id="timestamp"></span>
+      </div>
+
+    </div>
+  </div>
+
+<script src="/config.js"></script>
+<script>
+
+  const API_URL = window.CONFIG.API_BASE_URL;
+
+    const params = new URLSearchParams(window.location.search);
+    const data = JSON.parse(decodeURIComponent(params.get("data")));
+
+    document.getElementById("profilePhoto").src = data.photo_url;
+    document.getElementById("roll-no").textContent = "Roll No: " + data.roll_no;
+    document.getElementById("timestamp").innerText = new Date().toLocaleString();
+
+    // Auto Session: YEAR-YEAR+1
+    const year = new Date().getFullYear();
+    document.getElementById("sessionYear").innerText = `${year}-${year+1}`;
+
+    // Group data
+    const personalKeys = ["name", "email", "phone", "department", "dob", "address"];
+    const parentKeys = ["father_name", "father_phone", "mother_name", "mother_phone", "guardian_name", "guardian_phone"];
+    const eduKeys = [
+      "highschool_board", "highschool_year", "highschool_marks",
+      "intermediate_board", "intermediate_year", "intermediate_marks",
+      "diploma"
+    ];
+
+    function fillColumn(columnId, keys, title) {
+      const col = document.getElementById(columnId);
+      col.innerHTML = `<div class="section-title">${title}</div>`;
+      keys.forEach(k => {
+        col.innerHTML += `
+          <div class="detail-item">
+            <span class="detail-key">${k.replace(/_/g, " ").toUpperCase()}:</span> ${data[k] || "--"}
+          </div>`;
+      });
+    }
+
+    // DETAILS TABLE BUILDER
+const table = document.getElementById("details-table");
+
+function addHeadingRow(title) {
+  const row = document.createElement("tr");
+  row.innerHTML = `<th colspan="2" class="section-heading">${title}</th>`;
+  table.appendChild(row);
+}
+
+function addDataRow(key, value) {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td><strong>${key.replace(/_/g, " ").toUpperCase()}</strong></td>
+    <td>${value || "--"}</td>
+  `;
+  table.appendChild(row);
+}
+
+// Group keys
+const personal = ["name", "email", "phone", "department", "dob", "address"];
+const parents = ["father_name", "father_phone", "mother_name", "mother_phone", "guardian_name", "guardian_phone"];
+const education = [
+  "highschool_board", "highschool_year", "highschool_marks",
+  "intermediate_board", "intermediate_year", "intermediate_marks",
+  "diploma"
+];
+
+// Build table
+addHeadingRow("PERSONAL DETAILS");
+personal.forEach(k => addDataRow(k, data[k]));
+
+addHeadingRow("PARENT'S DETAILS");
+parents.forEach(k => addDataRow(k, data[k]));
+
+addHeadingRow("EDUCATIONAL DETAILS");
+education.forEach(k => addDataRow(k, data[k]));
+
+    document.getElementById("downloadBtn").onclick = () => {
+      window.location.href = `${API_URL}/download/${data.roll_no}`;
+    };
+</script>
+
+</body>
+</html>

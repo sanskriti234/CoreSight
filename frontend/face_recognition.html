@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CoreSight | Face Recognition</title>
+
+  <style>
+    :root {
+      --primary: #00ff88;
+      --accent: #00d4ff;
+      --bg-dark: #0a0a0a;
+      --bg-card: #0f0f0f;
+      --border: #1a1a1a;
+      --text: #ffffff;
+      --text-muted: #888;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      margin: 0;
+    }
+
+        /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10, 10, 10, 0.95);
+      backdrop-filter: blur(20px);
+      padding: 1.2rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid var(--border);
+    }
+
+    body.light-mode .header {
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .logo {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--primary);
+      text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+      text-decoration: none;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+
+    .nav-menu {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+
+    .nav-menu a {
+      color: #b0b0b0;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    .nav-menu a:hover {
+      color: var(--primary);
+      background: rgba(0, 255, 136, 0.1);
+    }
+
+    body.light-mode .nav-menu a {
+      color: #4a4a4a;
+    }
+
+    body.light-mode .nav-menu a:hover {
+      color: #00cc6f;
+      background: rgba(0, 204, 111, 0.1);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .btn-back {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .btn-back:hover {
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+    }
+
+    .theme-toggle {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      font-size: 1.3rem;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+
+    main {
+      padding: 140px 20px 40px;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* MAIN CARD */
+    .main-card {
+      width: 95%;
+      max-width: 900px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 2rem;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 255, 136, 0.08);
+    }
+
+    .card-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    /* VIDEO */
+    .video-wrapper {
+      width: 100%;
+      height: 520px;
+      max-width: 850px;
+      margin: 0 auto 20px;
+      background: black;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 0 40px rgba(0, 255, 136, 0.2);
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* STATUS PANEL */
+    .status-panel {
+      margin: 1rem auto;
+      padding: 0.9rem 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-dark);
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      max-width: 850px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      background: var(--primary);
+      border-radius: 50%;
+      box-shadow: 0 0 14px var(--primary);
+    }
+
+    /* BUTTONS */
+    .controls {
+      display: flex;
+      gap: 1rem;
+      max-width: 850px;
+      margin: 1rem auto 0;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 1rem;
+      border-radius: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: none;
+      font-size: 1rem;
+    }
+
+    #startBtn {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: black;
+    }
+
+    #stopBtn {
+      background: transparent;
+      border: 2px solid #ff4d4d;
+      color: #ff4d4d;
+    }
+
+    /* CAPTIONS */
+    .caption-box {
+      margin: 18px auto;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-width: 850px;
+      text-align: left;
+      backdrop-filter: blur(5px);
+    }
+
+    .caption-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 8px 0;
+    }
+
+    .caption-icon {
+      font-size: 1.3rem;
+      filter: drop-shadow(0 0 5px rgba(0, 255, 136, 0.4));
+    }
+
+    .caption-text {
+      color: var(--text-muted);
+      font-size: 1rem;
+      letter-spacing: 0.3px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="header">
+    <a href="/frontend/index.html" class="logo">CoreSight</a>
+
+    <nav>
+  <ul class="nav-menu">
+
+    <li>
+      <a href="/frontend/index.html">
+        Home
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/Student%20Registration.html">
+        Registration
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/face_recognition.html">
+        Recognition
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/document.html">
+        Document
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/attendance.html">
+        Attendance
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/management.html">
+        Manage
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/index.html#about">
+        About
+      </a>
+    </li>
+
+  </ul>
+</nav>
+
+    <div class="header-actions">
+      <button class="btn-back" id="backBtn">← Back</button>
+      <!-- unified id for global theme.js -->
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="main-card">
+
+      <div class="card-title">Face Recognition Module</div>
+
+      <!-- VIDEO -->
+      <div class="video-wrapper">
+        <video id="video" autoplay muted playsinline></video>
+      </div>
+
+      <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+
+      <!-- STATUS -->
+      <div class="status-panel">
+        <div class="status-dot"></div>
+        <div id="status">Initializing camera...</div>
+      </div>
+
+      <!-- BUTTONS -->
+      <div class="controls">
+        <button id="startBtn" class="btn">Start Recognition</button>
+        <button id="stopBtn" class="btn">Stop</button>
+      </div>
+
+      <!-- CAPTIONS -->
+      <div class="caption-box">
+
+        <div class="caption-item">
+          <span class="caption-icon">🟢</span>
+          <span class="caption-text">Ensure your face is clearly visible</span>
+        </div>
+
+        <div class="caption-item">
+          <span class="caption-icon">💡</span>
+          <span class="caption-text">Sit in a well-lit area for accurate detection</span>
+        </div>
+
+        <div class="caption-item">
+          <span class="caption-icon">📸</span>
+          <span class="caption-text">Hold still while the system scans your face</span>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- JAVASCRIPT (Your Full Logic Included) -->
+   <script src="/config.js"></script>
+  <script>
+    const backBtn = document.getElementById('backBtn');
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const statusDiv = document.getElementById("status");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    // Back button
+    backBtn.addEventListener('click', () => {
+      window.history.back();
+    });
+
+    let stream = null;
+    let intervalId = null;
+    let hasOpenedPreview = false;
+    const API_URL = `${window.CONFIG.API_BASE_URL}/recognize-faces`;
+
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        statusDiv.textContent = "Camera started. Click 'Start Recognition'.";
+      } catch (err) {
+        statusDiv.textContent = "Camera access denied!";
+      }
+    }
+
+    async function sendFrame() {
+      const context = canvas.getContext("2d");
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageBlob = await new Promise(res => canvas.toBlob(res, "image/jpeg"));
+
+      const formData = new FormData();
+      formData.append("frame", imageBlob);
+
+      try {
+        const response = await fetch(API_URL, { method: "POST", body: formData });
+        if (!response.ok) throw new Error("Server error");
+
+        const result = await response.json();
+
+        if (result.recognized_faces?.length > 0) {
+
+          statusDiv.textContent = `✅ Recognized: ${result.recognized_faces.join(", ")}`;
+
+          if (!hasOpenedPreview && result.profiles?.length > 0) {
+            hasOpenedPreview = true;
+
+            const rollNo = result.profiles[0].roll_no;
+            const previewPageUrl = `/frontend/preview.html?roll_no=${rollNo}`;
+
+            window.open(previewPageUrl, "_blank");
+
+            clearInterval(intervalId);
+            statusDiv.textContent = `Profile for ${rollNo} opened. Recognition stopped.`;
+          }
+        } else {
+          statusDiv.textContent = "🔍 No faces recognized.";
+        }
+
+      } catch (error) {
+        statusDiv.textContent = "⚠️ Server or processing error.";
+      }
+    }
+
+    startBtn.onclick = () => {
+      if (!intervalId && stream) {
+        hasOpenedPreview = false;
+        statusDiv.textContent = "Recognition started...";
+        intervalId = setInterval(sendFrame, 1000);
+      }
+    };
+
+    stopBtn.onclick = () => {
+      clearInterval(intervalId);
+      intervalId = null;
+      statusDiv.textContent = "Recognition stopped.";
+    };
+
+    startCamera();
+  </script>
+<!-- Global theme handling for ALL pages -->
+  <script src="theme.js"></script>
+</body>
+</html>

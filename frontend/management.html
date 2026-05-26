@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoreSight - Student Management</title>
+
+<!-- YOUR COMPLETE THEME + HEADER CSS -->
+<style>
+/* ---------- GLOBAL STYLE ---------- */
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Inter',sans-serif;
+  background:#0a0a0a;
+  min-height:100vh;
+  color:#fff;
+  overflow-x:hidden;
+  padding-top:90px;
+}
+
+/* ---------- HEADER ---------- */
+.header{
+  position:fixed;top:0;left:0;right:0;
+  background:rgba(10,10,10,0.95);
+  backdrop-filter:blur(10px);
+  padding:1.2rem 3rem;
+  display:flex;justify-content:space-between;align-items:center;
+  z-index:1000;border-bottom:1px solid #1a1a1a;
+}
+.logo{
+  font-size:2rem;font-weight:800;color:#00ff88;
+  text-shadow:0 0 20px rgba(0,255,136,0.5);
+}
+.nav-menu{display:flex;gap:2.5rem;list-style:none;}
+.nav-menu a{
+  color:#b0b0b0;text-decoration:none;font-weight:500;
+  padding:0.6rem 1.2rem;border-radius:8px;
+  transition:0.3s;background:transparent;
+}
+.nav-menu a:hover{
+  color:#00ff88;background:rgba(0,255,136,0.1);
+}
+.theme-toggle{
+  background:#1a1a1a;border:1px solid #2a2a2a;color:#00ff88;
+  width:45px;height:45px;border-radius:50%;
+  cursor:pointer;transition:0.3s;font-size:1.3rem;
+}
+.theme-toggle:hover{
+  background:#2a2a2a;transform:scale(1.1);
+  box-shadow:0 0 20px rgba(0,255,136,0.3);
+}
+
+/* LIGHT MODE */
+body.light-mode{background:#f8f9fa;color:#1a1a1a;}
+body.light-mode .header{background:#ffffff;border-bottom:1px solid #ddd;}
+body.light-mode .logo{color:#00cc6f;}
+body.light-mode .nav-menu a{color:#333;}
+body.light-mode .nav-menu a:hover{background:rgba(0,204,111,0.2);}
+body.light-mode .theme-toggle{background:#fff;border-color:#ccc;color:#00cc6f;}
+
+/* ---------- MANAGEMENT PANEL ---------- */
+.page-title{
+  text-align:center;font-size:3rem;
+  font-weight:800;color:#00ff88;
+  margin-bottom:30px;
+  text-shadow:0 0 20px rgba(0,255,136,0.3);
+}
+
+.search-box{
+  text-align:center;margin-bottom:25px;
+}
+.search-box input{
+  width:60%;padding:14px;font-size:1.1rem;
+  background:#111;color:#fff;border:none;
+  border-radius:12px;
+  box-shadow:0 0 12px rgba(0,255,136,0.2);
+}
+
+/* ---------- STUDENT CARDS ---------- */
+#studentsList{
+  width:90%;max-width:1000px;margin:auto;
+}
+.student-card{
+  background:#111;border:1px solid #1a1a1a;
+  border-radius:14px;padding:20px;margin-bottom:20px;
+  display:flex;justify-content:space-between;align-items:center;
+  transition:0.3s;box-shadow:0 0 20px rgba(0,255,136,0.12);
+}
+.student-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 0 32px rgba(0,255,136,0.25);
+}
+.buttons{display:flex;gap:10px;}
+.edit-btn,.delete-btn{
+  padding:10px 16px;border-radius:10px;font-weight:600;border:none;
+  cursor:pointer;transition:0.3s;
+}
+.edit-btn{background:#00d4ff;color:#000;}
+.edit-btn:hover{background:#0094aa;}
+.delete-btn{background:#ff4d4d;color:#fff;}
+.delete-btn:hover{background:#cc0000;}
+
+/* ---------- POPUPS / MODALS ---------- */
+.modal{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(4px);
+  display:none;justify-content:center;align-items:center;
+  z-index:2000;animation:fadeIn 0.2s;
+}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+
+.modal-content{
+  background:#111;border:1px solid #222;
+  width:350px;padding:25px;border-radius:14px;text-align:center;
+  box-shadow:0 0 30px rgba(0,255,136,0.3);
+  animation:popIn 0.25s ease;
+}
+@keyframes popIn{from{transform:scale(0.6);}to{transform:scale(1);}}
+
+/* Modal Inputs */
+.modal-content input{
+  width:90%;padding:12px;margin:8px 0;
+  background:#222;color:white;border:none;border-radius:8px;
+}
+
+/* Modal Buttons */
+.save-btn,.close-btn,.confirm-btn{
+  padding:12px 18px;border:none;border-radius:10px;
+  cursor:pointer;font-weight:700;margin:10px;
+}
+.save-btn{background:#00ff88;color:#000;}
+.close-btn{background:#ff4d4d;color:#fff;}
+.confirm-btn{background:#00d4ff;color:#000;}
+
+.promote-btn{
+  background:#00ff88;
+  color:#000;
+  padding:17px 17px;
+  border:none;
+  border-radius:10px;
+  font-weight:700;
+  margin-bottom:20px;
+  margin-left:19px;
+  cursor:pointer;transition:0.3s;
+}
+.promote-btn:hover{background:#00cc6f;}
+
+.undo-btn{
+  background:#ff4d4d;
+  color:#fff;
+  padding:17px 17px;
+  border:none;
+  border-radius:10px;
+  font-weight:700;
+  margin-bottom:20px;
+  margin-left:10px;
+  cursor:pointer;transition:0.3s;
+}
+.undo-btn:hover{background:#cc0000;}
+</style>
+</head>
+
+
+
+
+<body>
+
+<!-- ---------- HEADER ---------- -->
+<header class="header">
+  <div class="logo">CoreSight</div>
+
+  <nav>
+  <ul class="nav-menu">
+
+    <li>
+      <a href="/frontend/index.html">
+        Home
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/Student%20Registration.html">
+        Registration
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/face_recognition.html">
+        Recognition
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/document.html">
+        Document
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/attendance.html">
+        Attendance
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/management.html">
+        Manage
+      </a>
+    </li>
+
+    <li>
+      <a href="/frontend/index.html#about">
+        About
+      </a>
+    </li>
+
+  </ul>
+</nav>
+
+  <button class="theme-toggle" id="themeToggle">🌙</button>
+</header>
+
+
+
+<!-- ---------- MANAGEMENT PANEL TITLE ---------- -->
+<h1 class="page-title">Student Management</h1>
+
+<!-- SEARCH BAR -->
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="Search student by name or roll no..." onkeyup="filterStudents()">
+<button class="promote-btn" type="button" onclick="promoteYear()">
+Promote Academic Year
+</button>
+
+<button class="undo-btn" onclick="undoPromotion()">
+Undo Promotion
+</button>
+
+</div>
+
+<!-- STUDENTS LIST -->
+<div id="studentsList"></div>
+
+
+<!-- ---------- EDIT MODAL ---------- -->
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <h2>Edit Student</h2>
+
+    <input id="edit_name" placeholder="Name">
+    <input id="edit_email" placeholder="Email">
+    <input id="edit_phone" placeholder="Phone">
+    <input id="edit_department" placeholder="Department">
+    <input id="edit_year" placeholder="Academic Year">
+
+    <button class="save-btn" onclick="saveEdit()">Save</button>
+    <button class="close-btn" onclick="closeEditModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- ---------- DELETE CONFIRM MODAL ---------- -->
+<div id="deleteModal" class="modal">
+  <div class="modal-content">
+    <h2>Delete Student?</h2>
+    <p id="deleteText"></p>
+
+    <button class="confirm-btn" onclick="confirmDelete()">Delete</button>
+    <button class="close-btn" onclick="closeDeleteModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- ---------- SUCCESS MODAL ---------- -->
+<div id="successModal" class="modal">
+  <div class="modal-content">
+    <h2 id="successMessage">Success!</h2>
+    <button class="close-btn" onclick="closeSuccessModal()">OK</button>
+  </div>
+</div>
+
+
+<!-- ---------- JS LOGIC ---------- -->
+ <script src="/config.js"></script>
+
+<script>
+const API_URL = window.CONFIG.API_BASE_URL;
+let selectedRoll = null;
+
+/* ---------- THEME TOGGLE ---------- */
+// document.getElementById("themeToggle").onclick = function(){
+//   document.body.classList.toggle("light-mode");
+// };
+
+
+
+/* ---------- LOAD STUDENTS ---------- */
+async function loadStudents(){
+  try{
+    const res = await fetch(`${API_URL}/students`);
+    const data = await res.json();
+    window.studentsData = data.students || [];
+    displayStudents(window.studentsData);
+  }catch(err){
+    showSuccess("Failed to load students");
+  }
+}
+
+
+function displayStudents(students){
+  const list = document.getElementById("studentsList");
+  list.innerHTML = "";
+
+  students.forEach(std=>{
+    const card = document.createElement("div");
+    card.className="student-card";
+
+    card.innerHTML = `
+      <div>
+        <strong>${std.name}</strong> (${std.roll_no})<br>
+        ${std.email} | ${std.phone}<br>
+        <small>${std.department} — ${std.academic_year}</small>
+      </div>
+
+      <div class="buttons">
+        <button class="edit-btn" onclick="openEditModal('${std.roll_no}')">Edit</button>
+        <button class="delete-btn" onclick="openDeleteModal('${std.roll_no}','${std.name}')">Delete</button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+
+/* ---------- SEARCH FILTER ---------- */
+function filterStudents(){
+  const query = document.getElementById("searchInput").value.toLowerCase();
+  const filtered = window.studentsData.filter(
+    s =>
+      (s.name || "").toLowerCase().includes(query) ||
+      (s.roll_no || "").toLowerCase().includes(query)
+  );
+  displayStudents(filtered);
+}
+
+
+/* ---------- EDIT MODAL ---------- */
+function openEditModal(roll){
+  selectedRoll = roll;
+  const s = window.studentsData.find(x => x.roll_no === roll);
+
+  document.getElementById("edit_name").value = s.name;
+  document.getElementById("edit_email").value = s.email;
+  document.getElementById("edit_phone").value = s.phone;
+  document.getElementById("edit_department").value = s.department;
+  document.getElementById("edit_year").value = s.academic_year;
+
+  document.getElementById("editModal").style.display = "flex";
+}
+function closeEditModal(){
+  document.getElementById("editModal").style.display = "none";
+}
+
+async function saveEdit(){
+  const form = new FormData();
+  form.append("roll_no", selectedRoll);
+  form.append("name", document.getElementById("edit_name").value);
+  form.append("email", document.getElementById("edit_email").value);
+  form.append("phone", document.getElementById("edit_phone").value);
+  form.append("department", document.getElementById("edit_department").value);
+  form.append("academic_year", document.getElementById("edit_year").value);
+
+  const res = await fetch(`${API_URL}/update-student`, { method:"POST", body:form });
+  const data = await res.json();
+
+  showSuccess(data.message);
+  closeEditModal();
+  loadStudents();
+}
+
+/* ---------- DELETE MODAL ---------- */
+function openDeleteModal(roll,name){
+  selectedRoll = roll;
+  document.getElementById("deleteText").innerText = `Delete student ${name}?`;
+  document.getElementById("deleteModal").style.display = "flex";
+}
+function closeDeleteModal(){
+  document.getElementById("deleteModal").style.display="none";
+}
+
+async function confirmDelete(){
+  const form = new FormData();
+  form.append("roll_no", selectedRoll);
+
+  const res = await fetch(`${API_URL}/delete-student`, { method:"POST", body:form });
+  const data = await res.json();
+
+  closeDeleteModal();
+  showSuccess(data.message);
+  loadStudents();
+}
+
+/* ---------- SUCCESS POPUP ---------- */
+function showSuccess(msg){
+  closeEditModal();
+  closeDeleteModal();
+  document.getElementById("successMessage").innerText = msg;
+  document.getElementById("successModal").style.display = "flex";
+}
+
+function closeSuccessModal(){
+  document.getElementById("successModal").style.display="none";
+}
+
+loadStudents();
+
+async function promoteYear() {
+  if (!confirm("Promote academic year for ALL students?")) return;
+
+  try {
+    const res = await fetch(
+      `${API_URL}/students/promote-academic-year`,
+      { method: "POST" }
+    );
+
+    const data = await res.json();
+    showSuccess(data.message);
+    loadStudents();
+
+  } catch (err) {
+    showSuccess("Failed to promote academic year");
+  }
+}
+
+async function undoPromotion() {
+  if (!confirm("Undo last academic year promotion?")) return;
+
+  try {
+    const res = await fetch(
+      `${API_URL}/students/undo-academic-year`,
+      { method: "POST" }
+    );
+
+    const data = await res.json();
+    showSuccess(data.message);
+
+    loadStudents();
+
+  } catch (err) {
+    showPopup("Failed to undo academic year promotion");
+  }
+}
+
+</script>
+
+</body>
+</html>

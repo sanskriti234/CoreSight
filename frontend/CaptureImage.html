@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capture Images - CoreSight</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #00ff88;
+      --accent: #00d4ff;
+      --bg-dark: #0a0a0a;
+      --bg-card: #0f0f0f;
+      --border: #1a1a1a;
+      --text: #ffffff;
+      --text-muted: #888;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+
+    body.light-mode {
+      --bg-dark: #f8f9fa;
+      --bg-card: #ffffff;
+      --border: #e0e0e0;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --primary: #00cc6f;
+      --accent: #00a8d4;
+    }
+
+    /* Animated Background */
+    .animated-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+    }
+
+    body.light-mode .animated-bg {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f8f9fa 100%);
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10, 10, 10, 0.95);
+      backdrop-filter: blur(20px);
+      padding: 1.2rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      border-bottom: 1px solid var(--border);
+    }
+
+    body.light-mode .header {
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--primary);
+      text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+      text-decoration: none;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .btn-back {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .btn-back:hover {
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+    }
+
+    .theme-toggle {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      font-size: 1.3rem;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    }
+
+    /* Main Container */
+    .main {
+      margin-top: 100px;
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: calc(100% - 100px);
+    }
+
+    .container {
+      max-width: 1200px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--text) 0%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .video-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .video-panel:hover {
+      border-color: var(--primary);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    #webcam {
+      width: 100%;
+      max-width: 640px;
+      height: auto;
+      border: 3px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    #webcam.capturing {
+      transform: scale(1.02);
+      border-color: var(--primary);
+      box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+    }
+
+    .images-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      transition: all 0.3s ease;
+    }
+
+    .images-panel:hover {
+      border-color: var(--primary);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .images-panel h2 {
+      font-size: 1.8rem;
+      color: var(--primary);
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .images-panel h2::before {
+      content: '';
+      width: 4px;
+      height: 1.5rem;
+      background: linear-gradient(180deg, var(--primary), var(--accent));
+      border-radius: 2px;
+    }
+
+    #capturedImages {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 1rem;
+      width: 100%;
+      padding: 1.5rem;
+      background: var(--bg-dark);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      min-height: 150px;
+    }
+
+    .captured-img {
+      width: 100%;
+      height: 90px;
+      object-fit: cover;
+      border: 2px solid var(--primary);
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .captured-img:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+    }
+
+    #submitBtn {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      color: #000;
+      border: none;
+      padding: 1.2rem 3rem;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 1rem;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    #submitBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 255, 136, 0.4);
+    }
+
+    #submitBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #status {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      color: var(--primary);
+      text-align: center;
+      font-weight: 600;
+    }
+
+    #popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--bg-card);
+      padding: 3rem;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      text-align: center;
+      font-size: 1.8rem;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+      z-index: 2000;
+      animation: popupAppear 0.3s ease;
+    }
+
+    @keyframes popupAppear {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        padding: 1rem 1.5rem;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+      }
+
+      .main {
+        padding: 2rem 1.5rem;
+        margin-top: 80px;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+      }
+
+      .video-panel, .images-panel {
+        padding: 1.5rem;
+      }
+
+      #capturedImages {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 0.8rem;
+      }
+
+      .captured-img {
+        height: 60px;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+</head>
+ <body>
+  <div class="animated-bg"></div>
+  <header class="header"><a href="/frontend/index.html" class="logo">CoreSight</a>
+   <div class="header-actions"><button class="btn-back" id="backBtn">← Back</button> <button class="theme-toggle" id="btnMode" aria-label="Toggle theme">🌙</button>
+   </div>
+  </header>
+  <main class="main">
+   <div class="container">
+    <h1>📸 Capture Images</h1>
+    <div class="video-panel">
+     <video id="webcam" autoplay playsinline></video>
+     <p id="status">🎥 Starting webcam...</p>
+    </div>
+    <div class="images-panel">
+     <h2>Captured Images</h2>
+     <div id="capturedImages"></div>
+    </div><button id="submitBtn">Upload Images</button>
+   </div>
+  </main>
+  <div id="popup">
+   ✅ Upload Successful!
+  </div>
+  
+  <script src="config.js"></script>
+  <script>
+  const video = document.getElementById("webcam");
+  const capturedImagesContainer = document.getElementById("capturedImages");
+  const submitBtn = document.getElementById("submitBtn");
+  const statusText = document.getElementById("status");
+
+  backBtn.addEventListener("click", () => {
+  window.location.href =
+    `${API_BASE}/frontend/Student%20Registration.html`;
+  });
+
+
+  let capturedImages = [];
+
+  const params = new URLSearchParams(window.location.search);
+  const roll_no = params.get("roll_no") || "Unknown";
+
+  // 🎥 Start webcam
+  async function startWebcam() {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+
+    video.onloadedmetadata = () => {
+      console.log("Camera ready");
+      startAutoCapture();
+    };
+  }
+
+  // 📸 Auto capture images
+  function startAutoCapture() {
+    let count = 0;
+
+    const captureInterval = setInterval(() => {
+      if (count >= 8) {   
+        clearInterval(captureInterval);
+        statusText.textContent = "📸 Capture complete!";
+        return;
+      }
+
+      captureImage();
+      count++;
+
+    }, 800);  
+  }
+
+  // 📷 Capture single frame
+  function captureImage() {
+
+    if (video.readyState !== 4) {
+      console.log("Frame not ready");
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+
+      if (!blob || blob.size < 10000) {
+        console.log("Invalid image skipped");
+        return;
+      }
+
+      capturedImages.push(blob);
+
+      // Preview image
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(blob);
+      img.style.width = "100px";
+      img.style.margin = "5px";
+
+      capturedImagesContainer.appendChild(img);
+
+    }, "image/jpeg", 1.0); 
+  }
+
+  // Upload images
+
+submitBtn.addEventListener("click", async () => {
+
+  if (capturedImages.length === 0) {
+    alert("No images captured!");
+    return;
+  }
+
+  statusText.textContent = "⏳ Uploading...";
+  submitBtn.disabled = true;
+
+  const formData = new FormData();
+  formData.append("roll_no", roll_no);
+
+  capturedImages.forEach((blob, i) => {
+    formData.append("images", blob, `${roll_no}_${i + 1}.jpg`);
+  });
+
+  try {
+    const response = await fetch(`${API_BASE}/upload-captured-images`, {
+        method: "POST",
+        body: formData
+      });
+
+    const result = await response.json();
+
+    statusText.textContent = result.message || "✅ Upload successful!";
+
+    // ✅ Show success popup
+    const popup = document.getElementById("popup");
+    popup.style.display = "block";
+
+    // ✅ Stop webcam
+    if (video.srcObject) {
+      video.srcObject.getTracks().forEach(track => track.stop());
+    }
+
+    // ✅ Redirect to registration page after upload
+    setTimeout(() => {
+      window.location.href =
+        `${API_BASE}/frontend/Student%20Registration.html`;
+      }, 2000);
+
+  } catch (err) {
+    console.error(err);
+    statusText.textContent = "❌ Upload failed!";
+    submitBtn.disabled = false;
+  }
+});
+
+  startWebcam();
+</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a628d3fb1bb8990',t:'MTc2NDQyMzk5Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

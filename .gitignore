@@ -1,0 +1,7 @@
+.env
+venv/
+Core.db
+Dataset/
+__init__.py
+models.py
+Research Paper.docx
