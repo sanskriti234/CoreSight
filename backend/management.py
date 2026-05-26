@@ -19,12 +19,7 @@ router = APIRouter(prefix="", tags=["Management"])
 # =========================================================
 # Shared Config (same as main.py)
 # =========================================================
-<<<<<<< HEAD
-BASE_DIR = r"D:\CoreSight"
-from paths import ATTENDANCE_DIR, ENCODINGS_DIR, IMAGES_DIR, DETAILS_DIR, DOCUMENTS_DIR
-=======
-from paths import BASE_DIR,ATTENDANCE_DIR, ENCODINGS_DIR, IMAGES_DIR, DETAILS_DIR, DOCUMENTS_DIR,FRONTEND_DIR
->>>>>>> ea91db6 (Face recogntion and document module integrated)
+from paths import BASE_DIR ,ATTENDANCE_DIR, ENCODINGS_DIR, IMAGES_DIR, DETAILS_DIR, DOCUMENTS_DIR
 
 
 DB_PATH = "Core.db"

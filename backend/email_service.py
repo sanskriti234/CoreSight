@@ -7,22 +7,13 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv(dotenv_path="D:/CoreSight/.env")
-
-EMAIL_SENDER = os.getenv("EMAIL_SENDER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+load_dotenv()
 
 conf = ConnectionConfig(
-    MAIL_USERNAME=EMAIL_SENDER,
-    MAIL_PASSWORD=EMAIL_PASSWORD,
-    MAIL_FROM=EMAIL_SENDER,
-    MAIL_FROM_NAME="CoreSight Support",
-    MAIL_PORT=587,
-    MAIL_SERVER="smtp.gmail.com",
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
-    USE_CREDENTIALS=True,
-    VALIDATE_CERTS=True,
+    MAIL_USERNAME=os.getenv("EMAIL_SENDER"),
+    MAIL_PASSWORD=os.getenv("EMAIL_PASSWORD"),
+    MAIL_FROM=os.getenv("EMAIL_SENDER"),
+    MAIL_FROM_NAME="CoreSight Support"
 )
 
 fast_mail = FastMail(conf)

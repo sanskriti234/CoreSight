@@ -11,22 +11,10 @@ import pickle
 import numpy as np
 import face_recognition
 from typing import List
-<<<<<<< HEAD
-
-# ---------------------------------------------------------
-# CONFIG (import these from a shared config if you prefer)
-# ---------------------------------------------------------
-BASE_DIR = r"D:\CoreSight"
-DATASET_DIR = os.path.join(BASE_DIR, "backend", "Dataset")
-
-IMAGES_DIR = os.path.join(DATASET_DIR, "Images")
-ENCODINGS_DIR = os.path.join(DATASET_DIR, "Encodings")
-=======
 from paths import BASE_DIR,DATASET_DIR,ENCODINGS_DIR,IMAGES_DIR
 # ---------------------------------------------------------
 # CONFIG (import these from a shared config if you prefer)
 # ---------------------------------------------------------
->>>>>>> ea91db6 (Face recogntion and document module integrated)
 
 os.makedirs(ENCODINGS_DIR, exist_ok=True)
 
@@ -36,11 +24,8 @@ VALID_IMAGE_EXT = (".jpg", ".jpeg", ".png")
 # ---------------------------------------------------------
 # Core Logic
 # ---------------------------------------------------------
-<<<<<<< HEAD
-=======
 from concurrent.futures import ThreadPoolExecutor
 
->>>>>>> ea91db6 (Face recogntion and document module integrated)
 def generate_encoding_for_roll(roll_no: str) -> bool:
     """
     Generates face encoding for a single roll folder.
@@ -57,28 +42,6 @@ def generate_encoding_for_roll(roll_no: str) -> bool:
     if not os.path.isdir(roll_image_dir):
         return False
 
-<<<<<<< HEAD
-    encodings: List[np.ndarray] = []
-
-    for file in os.listdir(roll_image_dir):
-        if not file.lower().endswith(VALID_IMAGE_EXT):
-            continue
-
-        image_path = os.path.join(roll_image_dir, file)
-
-        try:
-            image = face_recognition.load_image_file(image_path)
-            locations = face_recognition.face_locations(image)
-
-            if not locations:
-                continue
-
-            face_enc = face_recognition.face_encodings(image, locations)[0]
-            encodings.append(face_enc)
-
-        except Exception as e:
-            print(f"[WARN] {roll_no}/{file}: {e}")
-=======
     # 🔥 Collect image paths (limit to 5 for speed)
     image_files = [
         os.path.join(roll_image_dir, f)
@@ -120,7 +83,6 @@ def generate_encoding_for_roll(roll_no: str) -> bool:
 
     # 🔥 Optional: keep only first 3 (faster averaging)
     encodings = encodings[:3]
->>>>>>> ea91db6 (Face recogntion and document module integrated)
 
     if not encodings:
         print(f"[INFO] No valid faces found for {roll_no}")
@@ -163,8 +125,3 @@ def scan_images_and_generate_encodings() -> List[str]:
             processed.append(roll_no)
 
     return processed
-<<<<<<< HEAD
-=======
-
-
->>>>>>> ea91db6 (Face recogntion and document module integrated)

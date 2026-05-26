@@ -19,18 +19,7 @@ router = APIRouter(tags=["Face Recognition"])
 # =========================================================
 # Paths (same as main.py)
 # =========================================================
-<<<<<<< HEAD
-BASE_DIR = r"D:\CoreSight"
-BACKEND_DIR = os.path.join(BASE_DIR, "backend")
-DATASET_DIR = os.path.join(BACKEND_DIR, "Dataset")
-
-IMAGES_DIR = os.path.join(DATASET_DIR, "Images")
-DETAILS_DIR = os.path.join(DATASET_DIR, "Details")
-DOCUMENTS_DIR = os.path.join(DATASET_DIR, "Documents")
-ENCODINGS_DIR = os.path.join(DATASET_DIR, "Encodings")
-=======
 from paths import BASE_DIR,ATTENDANCE_DIR, ENCODINGS_DIR, IMAGES_DIR, DETAILS_DIR, DOCUMENTS_DIR,FRONTEND_DIR
->>>>>>> ea91db6 (Face recogntion and document module integrated)
 
 # =========================================================
 # Shared In-Memory Encodings

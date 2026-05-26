@@ -3,19 +3,11 @@ import os
 import pickle
 import numpy as np
 import face_recognition
-<<<<<<< HEAD
-=======
-from paths import BASE_DIR,ATTENDANCE_DIR, ENCODINGS_DIR, IMAGES_DIR, DETAILS_DIR, DOCUMENTS_DIR,FRONTEND_DIR
->>>>>>> ea91db6 (Face recogntion and document module integrated)
-
+from paths import ENCODINGS_DIR
 # =========================
 #   LOAD ENCODINGS (.pkl)
 # =========================
-<<<<<<< HEAD
-encoding_path = r"D:\CoreSight\backend\Dataset\Encodings"
-=======
-encoding_path = r"D:Projects\CoreSight\backend\Dataset\Encodings"
->>>>>>> ea91db6 (Face recogntion and document module integrated)
+encoding_path = ENCODINGS_DIR
 known_encodings = []
 known_rolls = []
 
@@ -40,7 +32,6 @@ for file_name in os.listdir(encoding_path):
         known_encodings.append(encoding)
         known_rolls.append(roll_no)
 
-print(f"[INFO] Loaded encodings for {len(known_encodings)} students.\n")
 
 # =========================
 #   REAL-TIME RECOGNITION

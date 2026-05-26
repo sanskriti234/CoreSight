@@ -1,332 +1,245 @@
 # =========================================================
-#              CoreSight - Attendance Module
+#               CoreSight Attendance Module
 # =========================================================
 
 import os
+import cv2
 import sqlite3
 import calendar
 import numpy as np
+import face_recognition
+
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File
-from fastapi.responses import FileResponse
+
 from openpyxl import Workbook, load_workbook
-from openpyxl.utils import get_column_letter
-from PIL import Image
-import io
-from paths import BASE_DIR,ATTENDANCE_DIR, ENCODINGS_DIR, IMAGES_DIR, DETAILS_DIR, DOCUMENTS_DIR,FRONTEND_DIR
-
-
-# 🔗 IMPORT SHARED FACE DATA
+from paths import ATTENDANCE_DIR
 from face_service import known_encodings, known_rolls
 
 # =========================================================
 # Router
 # =========================================================
+
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
-os.makedirs(ATTENDANCE_DIR, exist_ok=True)
+# =========================================================
+# Database
+# =========================================================
 
 DB_PATH = "Core.db"
+
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 cursor = conn.cursor()
 
-# =========================================================
-# Attendance Log Table
-# =========================================================
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS attendance_log (
+cursor.execute(""" CREATE TABLE IF NOT EXISTS attendance_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    roll_no TEXT NOT NULL,
-    date TEXT NOT NULL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    roll_no TEXT,
+    date TEXT,
+    time TEXT,
+    status TEXT
 )
 """)
+
 conn.commit()
 
 # =========================================================
-#               Insert into excel
+# Create Attendance Excel
 # =========================================================
 
+def create_attendance_excel(year):
 
-from openpyxl import load_workbook
-import calendar
-from datetime import datetime
-
-def add_student_to_existing_attendance(roll_no: str, name: str):
-    year = datetime.now().year
-    file_path = os.path.join(ATTENDANCE_DIR, f"Attendance-{year}.xlsx")
-
-    if not os.path.exists(file_path):
-        return  # Attendance not created yet
-
-    wb = load_workbook(file_path)
-    ws = wb.active
-
-    for month in range(1, 13):
-        month_header = f"{calendar.month_name[month].upper()} {year}"
-
-        header_row = None
-        for r in range(1, ws.max_row + 1):
-            if ws.cell(r, 1).value == month_header:
-                header_row = r
-                break
-
-        if not header_row:
-            continue
-
-        # find insertion row (before blank gap)
-        r = header_row + 2
-        while ws.cell(r, 1).value:
-            r += 1
-
-        ws.cell(r, 1, roll_no)
-        safe_write(ws, r, 2, name)
-
-        days = calendar.monthrange(year, month)[1]
-        start = chr(ord("C"))
-        end = chr(ord("C") + days - 1)
-
-        ws.cell(r, 3 + days, f'=COUNTIF({start}{r}:{end}{r},"P")')
-        ws.cell(r, 4 + days, f'=COUNTIF({start}{r}:{end}{r},"A")')
-        ws.cell(r, 5 + days, f'=IF({3+days}{r}=0,0,{3+days}{r}*100/{days})')
-
-    wb.save(file_path)
-
-def safe_write(ws, row, col, value):
-    cell = ws.cell(row=row, column=col)
-
-    for merged_range in ws.merged_cells.ranges:
-        if cell.coordinate in merged_range:
-            top_left = ws.cell(
-                row=merged_range.min_row,
-                column=merged_range.min_col
-            )
-            top_left.value = value
-            return
-
-    cell.value = value
-
-
-# =========================================================
-#               Helpers
-# =========================================================
-def already_marked_today(roll_no: str):
-    today = datetime.now().strftime("%Y-%m-%d")
-    cursor.execute(
-        "SELECT id FROM attendance_log WHERE roll_no=? AND date=?",
-        (roll_no, today)
+    file_path = os.path.join(
+        ATTENDANCE_DIR,
+        f"Attendance-{year}.xlsx"
     )
-    return cursor.fetchone() is not None
-
-
-def insert_attendance_log(roll_no: str):
-    today = datetime.now().strftime("%Y-%m-%d")
-    cursor.execute(
-        "INSERT INTO attendance_log (roll_no, date) VALUES (?, ?)",
-        (roll_no, today)
-    )
-    conn.commit()
-
-def ensure_attendance_excel_exists(year: int):
-    file_path = os.path.join(ATTENDANCE_DIR, f"Attendance-{year}.xlsx")
-    
-    print("[DEBUG] Attendance Excel path:", file_path)
 
     if os.path.exists(file_path):
-        return  # already exists
-
-    print(f"[AUTO] Attendance Excel missing. Generating Attendance-{year}.xlsx")
-
-    # --- Generate new workbook ---
+        return file_path
     wb = Workbook()
     ws = wb.active
-    ws.title = f"{year}-Attendance"
-
-    cursor.execute("SELECT student_name, roll_no FROM students ORDER BY roll_no")
-    students = cursor.fetchall()
 
     row = 1
-    for month_index in range(1, 13):
-        month = calendar.month_name[month_index]
-        days = calendar.monthrange(year, month_index)[1]
 
-        # Month header
-        ws.merge_cells(
-            start_row=row,
-            start_column=1,
-            end_row=row,
-            end_column=days + 5
-        )
-        ws.cell(row, 1, f"{month.upper()} {year}")
+    for month in range(1, 13):
+
+        month_name = f"{calendar.month_name[month].upper()} {year}"
+
+        ws.cell(row=row, column=1).value = month_name
         row += 1
 
-        # Table header
-        ws.append(
-            ["Roll No", "Name"] +
-            list(range(1, days + 1)) +
-            ["Total P", "Total A", "%"]
-        )
+         # Headers
+        ws.cell(row=row, column=1).value = "Roll No"
+
+        days = calendar.monthrange(year, month)[1]
+
+        for d in range(1, days + 1):
+            ws.cell(row=row, column=d + 1).value = d
+
         row += 1
 
-        # Student rows
-        for name, roll in students:
-            ws.cell(row, 1, roll)
-            ws.cell(row, 2, name)
-
-            start = get_column_letter(3)
-            end = get_column_letter(2 + days)
-            total_p = get_column_letter(3 + days)
-
-            ws.cell(row, 3 + days,
-                    f'=COUNTIF({start}{row}:{end}{row},"P")')
-            ws.cell(row, 4 + days,
-                    f'=COUNTIF({start}{row}:{end}{row},"A")')
-            ws.cell(row, 5 + days,
-                    f'=IF({total_p}{row}=0,0,{total_p}{row}*100/{days})')
-
-            row += 1
-
-        row += 3  # gap before next month
+        # Reserve rows for students
+        row += 40
 
     wb.save(file_path)
-    print(f"[AUTO] Attendance-{year}.xlsx generated successfully")
 
+    return file_path
 
-def mark_attendance_in_excel(roll_no: str):
-    now = datetime.now()
-    year, month, day = now.year, now.month, now.day
-    
-    # ✅ AUTO-GENERATE if missing
-    ensure_attendance_excel_exists(year)
-    file_path = os.path.join(ATTENDANCE_DIR, f"Attendance-{year}.xlsx")
-    
+# =========================================================
+# Mark Attendance in Excel
+# =========================================================
+
+def mark_attendance_excel(roll_no):
+
+    today = datetime.now()
+
+    year = today.year
+    month = today.month
+    day = today.day
+
+    file_path = create_attendance_excel(year)
+
     wb = load_workbook(file_path)
     ws = wb.active
 
     month_header = f"{calendar.month_name[month].upper()} {year}"
 
     header_row = None
+
     for r in range(1, ws.max_row + 1):
+
         if ws.cell(r, 1).value == month_header:
             header_row = r
             break
 
     if not header_row:
-        raise Exception("Month block not found")
+        return False
+
+    student_row = None
 
     r = header_row + 2
+
     while ws.cell(r, 1).value:
+
         if str(ws.cell(r, 1).value).strip() == roll_no:
-            ws.cell(r, 2 + day, "P")
-            wb.save(file_path)
-            return
+            student_row = r
+            break
+
         r += 1
 
-    raise Exception("Student not found in attendance sheet")
+    # Add new student automatically
+    if not student_row:
+        student_row = r
+        ws.cell(student_row, 1).value = roll_no
 
-# =========================================================
-#       Generate Attendance Register
-# =========================================================
-@router.get("/generate-register/{year}")
-def generate_attendance_register(year: int):
-    wb = Workbook()
-    ws = wb.active
-    ws.title = f"{year}-Attendance"
+    attendance_col = day + 1
 
-    cursor.execute("SELECT student_name, roll_no FROM students ORDER BY roll_no")
-    students = cursor.fetchall()
+    # Prevent duplicate attendance
+    if ws.cell(student_row, attendance_col).value == "P":
+        return "already_marked"
 
-    row = 1
-    for month_index in range(1, 13):
-        month = calendar.month_name[month_index]
-        days = calendar.monthrange(year, month_index)[1]
+    ws.cell(student_row, attendance_col).value = "P"
 
-        ws.merge_cells(
-            start_row=row,
-            start_column=1,
-            end_row=row,
-            end_column=days + 5
-    
-        )
-        ws.cell(row, 1, f"{month.upper()} {year}")
-        row += 1
-
-        ws.append(["Roll No", "Name"] + list(range(1, days + 1)) + ["Total P", "Total A", "%"])
-        row += 1
-
-        for name, roll in students:
-            ws.cell(row, 1, roll)
-            ws.cell(row, 2, name)
-
-            start = get_column_letter(3)
-            end = get_column_letter(2 + days)
-            total_p = get_column_letter(3 + days)
-
-            ws.cell(row, 3 + days, f'=COUNTIF({start}{row}:{end}{row},"P")')
-            ws.cell(row, 4 + days, f'=COUNTIF({start}{row}:{end}{row},"A")')
-            ws.cell(row, 5 + days, f'=IF({total_p}{row}=0,0,{total_p}{row}*100/{days})')
-
-            row += 1
-
-        row += 3
-
-    file_path = os.path.join(ATTENDANCE_DIR, f"Attendance-{year}.xlsx")
     wb.save(file_path)
 
-    return FileResponse(file_path, filename=os.path.basename(file_path))
+    return "marked"
 
 # =========================================================
-#               Face-based Attendance 
+# Face Recognition Attendance API
 # =========================================================
+
 @router.post("/mark-by-face")
-async def mark_attendance_by_face(frame: UploadFile = File(...)):
+async def mark_by_face(frame: UploadFile = File(...)):
+
     image_bytes = await frame.read()
-    image = np.array(Image.open(io.BytesIO(image_bytes)).convert("RGB"))
 
-    if not known_encodings:
-        return {"status": "no_encodings_loaded"}
+    np_arr = np.frombuffer(image_bytes, np.uint8)
 
-    import face_recognition
-    encs = face_recognition.face_encodings(image)
-    if not encs:
+    image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    face_locations = face_recognition.face_locations(rgb)
+
+    if not face_locations:
         return {"status": "no_face"}
 
-    distances = face_recognition.face_distance(known_encodings, encs[0])
-    best = np.argmin(distances)
+    face_encodings = face_recognition.face_encodings(
+        rgb,
+        face_locations
+    )
 
-    if distances[best] >= 0.45:
-        return {"status": "unknown"}
+    for enc in face_encodings:
 
-    roll_no = known_rolls[best]
+        distances = face_recognition.face_distance(
+            known_encodings,
+            enc
+        )
 
-    if already_marked_today(roll_no):
-        return {"status": "already_marked", "roll_no": roll_no}
+        if len(distances) == 0:
+            continue
 
-    mark_attendance_in_excel(roll_no)
-    insert_attendance_log(roll_no)
+        best_match = np.argmin(distances)
 
-    return {"status": "marked_present", "roll_no": roll_no}
+        if distances[best_match] < 0.45:
 
+            roll_no = known_rolls[best_match]
+
+            attendance_result = mark_attendance_excel(roll_no)
+
+            now = datetime.now()
+
+            if attendance_result == "already_marked":
+                return {
+                    "status": "already_marked",
+                    "roll_no": roll_no
+                }
+
+            cursor.execute("""
+            INSERT INTO attendance_logs
+            (roll_no, date, time, status)
+            VALUES (?, ?, ?, ?)
+            """, (
+                roll_no,
+                now.strftime("%Y-%m-%d"),
+                now.strftime("%H:%M:%S"),
+                "Present"
+            ))
+
+            conn.commit()
+
+            return {
+                "status": "marked_present",
+                "roll_no": roll_no
+            }
+        
+    return {"status": "unknown"}
 # =========================================================
-#                 Today's Logs
+# Today's Logs API
 # =========================================================
+
+
 @router.get("/logs-today")
-def attendance_logs_today():
+def logs_today():
+
     today = datetime.now().strftime("%Y-%m-%d")
 
     cursor.execute("""
-        SELECT roll_no, time(timestamp)
-        FROM attendance_log
-        WHERE date=?
-        GROUP BY roll_no
-        ORDER BY timestamp DESC
+    SELECT roll_no, date, time, status
+    FROM attendance_logs
+    WHERE date=?
+    ORDER BY id DESC
     """, (today,))
 
-    return {
-        "logs": [
-            {"roll_no": r[0], "time": r[1], "status": "Present"}
-            for r in cursor.fetchall()
-        ]
-    }
+    rows = cursor.fetchall()
 
+    logs = []
 
+    for row in rows:
+        logs.append({
+            "roll_no": row[0],
+            "date": row[1],
+            "time": row[2],
+            "status": row[3]
+        })
+
+    return {"logs": logs}

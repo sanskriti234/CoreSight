@@ -24,37 +24,26 @@ from docx import Document as DocxDocument
 from docx.shared import Inches
 from pathlib import Path
 import pandas as pd
+from dotenv import load_dotenv
+from docx_generator import generate_student_profile_docx, generate_custom_docx, DocxGenerator
 from fastapi import (FastAPI, File, Form, UploadFile, HTTPException,BackgroundTasks, Query)
 from fastapi.responses import (JSONResponse, FileResponse, StreamingResponse, HTMLResponse)
-from paths import BASE_DIR,ATTENDANCE_DIR, ENCODINGS_DIR, IMAGES_DIR, DETAILS_DIR, DOCUMENTS_DIR,FRONTEND_DIR
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 # from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
-from pydantic import BaseModel, EmailStrfrom 
-from docx_generator import generate_student_profile_docx, generate_custom_docx, DocxGenerator
-from encoding_scanner import scan_images_and_generate_encodings
+from pydantic import BaseModel, EmailStr
 from email_service import send_registration_email
-from dotenv import load_dotenv
+from attendance import router as attendance_router
+from paths import ASSETS_DIR, BASE_DIR,ATTENDANCE_DIR, ENCODINGS_DIR, IMAGES_DIR, DETAILS_DIR, DOCUMENTS_DIR,FRONTEND_DIR
 
 load_dotenv()
 
-
 app = FastAPI(title="CoreSight API")
-
-# Enable CORS (allow frontend to access backend)
-origins = ["*"]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 BASE_URL = os.getenv(
     "BASE_URL",
     "http://127.0.0.1:8000"
 )
+
 # =========================================================
 #                  1️⃣ PATH CONFIGURATION
 # =========================================================
@@ -108,9 +97,15 @@ for row in rows:
     print(row)'''
 
 
+
+# =========================================================
+#                  4️⃣ FASTAPI INITIALIZATION
+# =========================================================
+
 # Static File Mounts
 if os.path.isdir(FRONTEND_DIR):
     app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
+    app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 
 if os.path.isdir(DOCUMENTS_DIR):
     app.mount("/documents", StaticFiles(directory=DOCUMENTS_DIR), name="documents")
@@ -118,7 +113,21 @@ if os.path.isdir(DOCUMENTS_DIR):
 if os.path.isdir(IMAGES_DIR):
     app.mount("/static", StaticFiles(directory=IMAGES_DIR), name="static")
 
+# Enable CORS (allow frontend to access backend)
+origins = ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+app.include_router(attendance_router)
+
+@app.get("/")
+def home():
+    return FileResponse(os.path.join("frontend/index.html"))
 
 # =========================================================
 #              CoreSight - Management Module
@@ -126,11 +135,14 @@ if os.path.isdir(IMAGES_DIR):
 from management import router as management_router
 app.include_router(management_router)
 
+
+
 # =========================================================
 #              CoreSight - Attendance Module
 # =========================================================
 from attendance import router as attendance_router
 app.include_router(attendance_router)
+
 
 
 # =========================================================
@@ -153,6 +165,8 @@ app.include_router(face_router)
 # Scans Images/{roll_no}/ folders
 # Generates face encodings if not already present
 # Saves encodings in Encodings/{roll_no}.pkl
+
+from encoding_scanner import scan_images_and_generate_encodings
 
 @app.on_event("startup")
 def startup_scan():
@@ -224,6 +238,8 @@ def generate_profile_files(roll_no: str):
     return {"docx": doc_path, "data": data}
 
 
+
+
 # =========================================================
 #                  8️⃣ ROUTES
 # =========================================================
@@ -251,6 +267,16 @@ async def register_user(details: UserDetails, background_tasks: BackgroundTasks)
     os.makedirs(os.path.join(IMAGES_DIR, roll_no), exist_ok=True)
     with open(os.path.join(DETAILS_DIR, f"{roll_no}.json"), "w", encoding="utf-8") as f:
         json.dump(user_data, f, indent=4)
+
+    # Reload encoding list if required
+    reload_encodings()
+    
+    # Insert into Excel
+
+    # add_student_to_existing_attendance(
+    #     roll_no=user_data["roll_no"],
+    #     name=user_data["name"]
+    # )
 
     # 🔹 Send confirmation email in background
     background_tasks.add_task(
@@ -290,10 +316,12 @@ async def upload_captured_images(roll_no: str = Form(...), images: List[UploadFi
             if len(contents) < 5000:
                 continue
 
+             # 🔥 SAVE IMAGE (ADD THIS)
             img_path = os.path.join(folder, f"{roll_no}_{i+1}.jpg")
             with open(img_path, "wb") as f:
                 f.write(contents)
 
+            # 🔥 DIRECT OpenCV decode (this is the real fix)
             nparr = np.frombuffer(contents, np.uint8)
             img_data = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
