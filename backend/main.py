@@ -24,31 +24,40 @@ from docx import Document as DocxDocument
 from docx.shared import Inches
 from pathlib import Path
 import pandas as pd
-# Import enhanced DOCX generator
-from docx_generator import generate_student_profile_docx, generate_custom_docx, DocxGenerator
-
-from fastapi import (
-    FastAPI, File, Form, UploadFile, HTTPException,
-    BackgroundTasks, Query
-)
-from fastapi.responses import (
-    JSONResponse, FileResponse, StreamingResponse, HTMLResponse
-)
+from fastapi import (FastAPI, File, Form, UploadFile, HTTPException,BackgroundTasks, Query)
+from fastapi.responses import (JSONResponse, FileResponse, StreamingResponse, HTMLResponse)
+from paths import BASE_DIR,ATTENDANCE_DIR, ENCODINGS_DIR, IMAGES_DIR, DETAILS_DIR, DOCUMENTS_DIR,FRONTEND_DIR
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 # from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStrfrom 
+from docx_generator import generate_student_profile_docx, generate_custom_docx, DocxGenerator
+from encoding_scanner import scan_images_and_generate_encodings
 from email_service import send_registration_email
-
 from dotenv import load_dotenv
+
 load_dotenv()
 
 
+app = FastAPI(title="CoreSight API")
+
+# Enable CORS (allow frontend to access backend)
+origins = ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+BASE_URL = os.getenv(
+    "BASE_URL",
+    "http://127.0.0.1:8000"
+)
 # =========================================================
 #                  1️⃣ PATH CONFIGURATION
 # =========================================================
-from paths import BASE_DIR,ATTENDANCE_DIR, ENCODINGS_DIR, IMAGES_DIR, DETAILS_DIR, DOCUMENTS_DIR,FRONTEND_DIR
-
 
 # Ensure all essential folders exist
 for path in [IMAGES_DIR, DETAILS_DIR, DOCUMENTS_DIR, ENCODINGS_DIR]:
@@ -99,13 +108,6 @@ for row in rows:
     print(row)'''
 
 
-
-# =========================================================
-#                  4️⃣ FASTAPI INITIALIZATION
-# =========================================================
-
-app = FastAPI(title="CoreSight API")
-
 # Static File Mounts
 if os.path.isdir(FRONTEND_DIR):
     app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
@@ -116,15 +118,7 @@ if os.path.isdir(DOCUMENTS_DIR):
 if os.path.isdir(IMAGES_DIR):
     app.mount("/static", StaticFiles(directory=IMAGES_DIR), name="static")
 
-# Enable CORS (allow frontend to access backend)
-origins = ["http://127.0.0.1:5500", "http://localhost:5500"]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
 
 # =========================================================
 #              CoreSight - Management Module
@@ -132,14 +126,11 @@ app.add_middleware(
 from management import router as management_router
 app.include_router(management_router)
 
-
-
 # =========================================================
 #              CoreSight - Attendance Module
 # =========================================================
 from attendance import router as attendance_router
 app.include_router(attendance_router)
-
 
 
 # =========================================================
@@ -162,8 +153,6 @@ app.include_router(face_router)
 # Scans Images/{roll_no}/ folders
 # Generates face encodings if not already present
 # Saves encodings in Encodings/{roll_no}.pkl
-
-from encoding_scanner import scan_images_and_generate_encodings
 
 @app.on_event("startup")
 def startup_scan():
@@ -213,7 +202,7 @@ def generate_profile_files(roll_no: str):
     # Check for profile image
     profile_img_path = os.path.join(IMAGES_DIR, roll_no, "profile.jpg")
     if os.path.exists(profile_img_path):
-        data["photo_url"] = f"http://127.0.0.1:8000/static/{roll_no}/profile.jpg"
+        data["photo_url"] = f"{BASE_URL}/static/{roll_no}/profile.jpg"
         image_path = profile_img_path
     else:
         data["photo_url"] = "https://via.placeholder.com/130"
@@ -233,8 +222,6 @@ def generate_profile_files(roll_no: str):
         return None
 
     return {"docx": doc_path, "data": data}
-
-
 
 
 # =========================================================
@@ -264,17 +251,6 @@ async def register_user(details: UserDetails, background_tasks: BackgroundTasks)
     os.makedirs(os.path.join(IMAGES_DIR, roll_no), exist_ok=True)
     with open(os.path.join(DETAILS_DIR, f"{roll_no}.json"), "w", encoding="utf-8") as f:
         json.dump(user_data, f, indent=4)
-
-    # Reload encoding list if required
-    reload_encodings()
-    
-    # Insert into Excel
-    from attendance import add_student_to_existing_attendance
-
-    # add_student_to_existing_attendance(
-    #     roll_no=user_data["roll_no"],
-    #     name=user_data["name"]
-    # )
 
     # 🔹 Send confirmation email in background
     background_tasks.add_task(
@@ -314,12 +290,10 @@ async def upload_captured_images(roll_no: str = Form(...), images: List[UploadFi
             if len(contents) < 5000:
                 continue
 
-             # 🔥 SAVE IMAGE (ADD THIS)
             img_path = os.path.join(folder, f"{roll_no}_{i+1}.jpg")
             with open(img_path, "wb") as f:
                 f.write(contents)
 
-            # 🔥 DIRECT OpenCV decode (this is the real fix)
             nparr = np.frombuffer(contents, np.uint8)
             img_data = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
@@ -379,7 +353,7 @@ async def generate_and_preview(roll_no: str):
         data = json.load(f)
 
     photo_path = os.path.join(IMAGES_DIR, roll_no, "profile.jpg")
-    photo_url = f"http://127.0.0.1:8000/static/{roll_no}/profile.jpg" if os.path.exists(photo_path) else "https://via.placeholder.com/130"
+    photo_url = f"{BASE_URL}/static/{roll_no}/profile.jpg" if os.path.exists(photo_path) else "https://via.placeholder.com/130"
     data["photo_url"] = photo_url
 
     return JSONResponse(content={"status": "success", "data": data})
